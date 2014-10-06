@@ -52,7 +52,7 @@ class RSA {
 		String buffer = "";
 		char[] messageArray = message.toCharArray();
 		for( char c : messageArray )
-			buffer = buffer + Character.getNumericValue(c);
+			buffer = buffer + this.formatInteger(Character.getNumericValue(c));
 
 		BigInteger messageInteger = new BigInteger(buffer);
 		return messageInteger;
@@ -63,6 +63,33 @@ class RSA {
 		char[] messageArray = message.toString().toCharArray();
 		for( char c : messageArray ) {
 			
+		}
+	}
+	
+	// Pads the given integer with 0's to allow formatting.
+	// Works for values < 1000, 4 digit integers.
+	private String formatInteger(int element) {
+		String strRep = Integer.toString(element);
+		if(element < 10)
+			return strRep + "00";
+		else if(element < 100)
+			return strRep + "0";
+		else if(element < 1000)
+			return strRep;
+		
+	}
+	
+	// Strips the given block of the 0 padding.
+	private String stripPadding(String block) {
+		char[] charArray = block.toCharArray();
+		boolean foundEnd = false;
+		int index = 0, endIndex;
+		while(!foundEnd) {
+			if(charArray[index] == '0') {
+				foundEnd = true;
+				endIndex = index;
+			} else
+				index++;
 		}
 	}
 }
