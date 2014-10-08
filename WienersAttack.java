@@ -6,41 +6,66 @@ import java.util.Arrays;
 
 public class WienersAttack {
 	public static void main( String[] args ) {
-		RSA obj = new RSA(8);
-		BigInteger x = obj.generateRandomZPrime();
-		System.out.println("Encrypted...");
-		System.out.println("Cipher: " + x);
-		boolean isSecure = false;
-		BigInteger d = obj.generateDecryptionExponent(obj.e,obj.phiN);
-		BigInteger cipher = obj.encrypt(x);
-		/*
-		while( !isSecure ) {
-			d = obj.generateDecryptionExponent(obj.e,obj.phiN);
-			BigInteger check = cipher.pow((int)d.longValue()).modPow(obj.e,obj.n);
-			System.out.println("The check is: " + check); // erase
-			if(check.equals(cipher))
-				isSecure = true;
+		TestRSA obj = new TestRSA(16);
+		WienersAttack.attack(obj);
+	}
+
+	// Runs Wiener's attack on the given RSA object.
+	// Can later set a range for the multiples, as well as number of iterations.
+	public static void attack(TestRSA rsa) {
+		BigInteger x = rsa.generateRandomZPrime();
+		System.out.println("x: " + x);
+		BigInteger d = null;
+		boolean isSuitableExponent = false;
+		while(!isSuitableExponent) {
+			d = rsa.generateDecryptionExponent(rsa.e,rsa.phiN);
+			if( d.longValue() <=(Math.pow(rsa.n.longValue(),0.25)/3)) {
+				isSuitableExponent = true;
+			}
 		}
-		*/
-		System.out.println("Found d...");
-		BigInteger key = obj.decrypt(cipher,d,obj.n);
-		System.out.println("Decrypted...");
-		System.out.println("The recovered key is: " + key);
+		System.out.println("Found eligible d");
+		BigInteger cipher = rsa.encrypt(x);
+		BigInteger key = rsa.decrypt(cipher,d,rsa.n);
+		System.out.println("The decrypted x: " + key);
+		System.out.println("-------------------------------------------------");
+		
+		boolean exponentFound = false;
+		double fraction = rsa.n.longValue() / rsa.e.longValue();
+		int multiple = 1;
+		
+		BigInteger attackKey = null;
+		while(!exponentFound) {
+			long guess = Math.round(multiple * fraction);
+			if(d.equals(BigInteger.valueOf(guess)))
+				System.out.println("Found match!");
+			/*
+			BigInteger guessedKey = cipher.modPow(BigInteger.valueOf(guess),rsa.n);
+			System.out.println(guessedKey);
+			if(x.equals(guessedKey)) {
+				exponentFound = true;
+				attackKey = guessedKey;
+			}
+			*/
+			// run the guessed decryption exponent on the ciphertext; recall c = m^e, so m = c^d since m^(e*d) = m^1 = m.
+		}
+		System.out.println("The attack recovered x: " + attackKey);
 	}
 }
 
-class RSA {
+class TestRSA {
 	private int numBits;
+	public BigInteger message = null; // should not be public in normal RSA
 	public BigInteger e = new BigInteger("65537"), phiN, n;
 	private BigInteger d;
 	
-	public RSA(int bits) {
+	public TestRSA(int bits) {
 		this.numBits = bits;
 		Random r = new Random();
 		BigInteger p = new BigInteger(bits,48,r), q = new BigInteger(bits,48,r);
 		this.n = p.multiply(q);
 		this.phiN = this.n.subtract(p).subtract(q).add(BigInteger.valueOf(1));	
 	}
+	
 	// Returns a random element in Z*n.
 	public BigInteger generateRandomZPrime() {
 		BigInteger element = null;
@@ -65,7 +90,6 @@ class RSA {
 	// Decrypts the message.
 	public BigInteger decrypt(BigInteger cipher, BigInteger d, BigInteger mod) {
 		BigInteger message = cipher.modPow(d,mod);
-		
 		return message;
 	}
 	
@@ -83,6 +107,7 @@ class RSA {
 			} else
 				multiple++;
 		}
+		d = decryptionExponent;
 		return decryptionExponent;
 	}
 }
